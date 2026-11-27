@@ -21,11 +21,11 @@ echo "日志：tail -f visual-platform.log"
 #    官方做法：桌面快捷方式在 /.xgcos/desktop/，info.yaml 写名字和端口。
 DESKTOP=/.xgcos/desktop
 if [ -d "$DESKTOP" ]; then
-  mkdir -p "$DESKTOP/海涛AI导演台.app"
-  cp shortcut/info.yaml "$DESKTOP/海涛AI导演台.app/info.yaml"
+  mkdir -p "$DESKTOP/海影-AI漫剧工作台.app"
+  cp shortcut/info.yaml "$DESKTOP/海影-AI漫剧工作台.app/info.yaml"
   # 图标：先复制占位图，部署后换成 512x512 的 web.png 即可
-  cp shortcut/web.png "$DESKTOP/海涛AI导演台.app/web.png" 2>/dev/null || true
-  echo "桌面快捷方式已建好：$DESKTOP/海涛AI导演台.app，桌面右键刷新就能看到"
+  cp shortcut/web.png "$DESKTOP/海影-AI漫剧工作台.app/web.png" 2>/dev/null || true
+  echo "桌面快捷方式已建好：$DESKTOP/海影-AI漫剧工作台.app，桌面右键刷新就能看到"
   echo "注意：info.yaml 里的 port 必须和 config.py 的 PORT 一致（当前 $PORT）"
 else
   echo "没找到 $DESKTOP（不是仙宫云 OS 桌面环境），跳过快捷方式，只启动了平台"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""海涛AI导演台后端：生图 / 视频 / 音频 / 资产管理，都调同一套 ComfyUI。
+"""海影-AI漫剧工作台后端：生图 / 视频 / 音频 / 资产管理，都调同一套 ComfyUI。
 
 - 进度：提交后开一个 WebSocket 线程收 ComfyUI 的采样进度
   （value/max），收不到就按队列位置 + 已用时间兜底显示；
