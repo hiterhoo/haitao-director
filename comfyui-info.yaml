@@ -1,0 +1,6 @@
+name: ComfyUI
+title: ComfyUI
+icon: web.png
+type: browser
+props:
+  port: 8188

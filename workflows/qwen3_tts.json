@@ -1,0 +1,24 @@
+{
+  "1": {
+    "class_type": "FB_Qwen3TTSVoiceDesign",
+    "inputs": {
+      "text": "{{TEXT}}",
+      "instruct": "A young male voice speaking Mandarin Chinese, nervous and tense tone",
+      "model_choice": "1.7B",
+      "device": "auto",
+      "precision": "bf16",
+      "language": "Auto",
+      "seed": 0
+    }
+  },
+  "2": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "1",
+        0
+      ],
+      "filename_prefix": "audio/visual_tts"
+    }
+  }
+}

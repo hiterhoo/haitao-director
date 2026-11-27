@@ -1,0 +1,6 @@
+name: 海涛AI导演台
+title: 海涛AI导演台
+icon: web.png
+type: browser
+props:
+  port: 8080
