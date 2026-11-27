@@ -39,8 +39,14 @@ button.small { background: var(--small-bg); color: var(--text); border: none; bo
 .bar > div { height: 100%; background: #2563eb; border-radius: 4px; transition: width .5s; }
 .bar > div.done { background: #16a34a; }
 .bar > div.failed { background: #dc2626; }
-.result img, .result video, .job img, .job video { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: block; }
-.result video, .job video { max-height: 75vh; object-fit: contain; background: #000; }
+.result img, .result video, .job img, .job video { width: auto; max-width: min(320px, 100%); max-height: 320px; height: auto; border-radius: 8px; margin-top: 8px; display: block; }
+.result video, .job video { object-fit: contain; background: #000; }
+/* 预览默认小窗，点「放大」切到大图（.big） */
+.result img.big, .result video.big, .job img.big, .job video.big, .asset img.big, .asset video.big { width: 100%; max-width: 100%; max-height: 85vh; }
+.mwrap { position: relative; display: inline-block; max-width: 100%; }
+.mwrap img, .mwrap video { width: auto; max-width: min(320px, 100%); max-height: 320px; height: auto; border-radius: 8px; display: block; background: #000; }
+.mwrap img.big, .mwrap video.big { width: 100%; max-width: 100%; max-height: 85vh; }
+.mzoom { margin-top: 4px; }
 .result audio, .job audio { width: 100%; margin-top: 8px; }
 .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .thumbs .t { position: relative; width: 72px; }
@@ -49,7 +55,7 @@ button.small { background: var(--small-bg); color: var(--text); border: none; bo
 .thumbs .t span { display: block; font-size: 10px; color: var(--muted); word-break: break-all; }
 .assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
 .asset { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px; font-size: 12px; }
-.asset img, .asset video { width: 100%; height: auto; border-radius: 6px; display: block; }
+.asset img, .asset video { width: auto; max-width: min(320px, 100%); max-height: 320px; height: auto; border-radius: 6px; display: block; }
 .asset audio { width: 100%; }
 .asset .name { word-break: break-all; color: var(--name); margin: 4px 0; }
 .asset .meta { color: var(--muted); font-size: 11px; }
@@ -373,9 +379,15 @@ function coverOf(files, v){
   const c = (files || []).find(x => x.filename === base + '_cover.jpg');
   return c ? c.url : '';
 }
+function toggleBig(btn){
+  const m = btn.parentElement.querySelector('img, video');
+  if (!m) return;
+  const big = m.classList.toggle('big');
+  btn.textContent = big ? '缩小' : '放大';
+}
 function fileHtml(f, files){
-  if (f.kind === 'image') return '<img src="'+esc(f.url)+'" alt="'+esc(f.filename)+'">';
-  if (f.kind === 'video') { const cov = files ? coverOf(files, f) : ''; return '<video src="'+esc(f.url)+'" controls preload="metadata"' + (cov ? ' poster="'+esc(cov)+'"' : '') + '></video>'; }
+  if (f.kind === 'image') return '<span class="mwrap"><img src="'+esc(f.url)+'" alt="'+esc(f.filename)+'"><button class="small mzoom" onclick="toggleBig(this)">放大</button></span>';
+  if (f.kind === 'video') { const cov = files ? coverOf(files, f) : ''; return '<span class="mwrap"><video src="'+esc(f.url)+'" controls preload="metadata"' + (cov ? ' poster="'+esc(cov)+'"' : '') + '></video><button class="small mzoom" onclick="toggleBig(this)">放大</button></span>'; }
   if (f.kind === 'audio') return '<audio src="'+esc(f.url)+'" controls></audio>';
   return '<a href="'+esc(f.url)+'">'+esc(f.filename)+'</a>';
 }
@@ -655,7 +667,7 @@ function shotsHtml(e, i, jobMap){
       '<label>台词</label><input data-shot-diag="' + i + '-' + j + '" value="' + esc(sh.dialogue) + '">' +
       '<label>H3 提示词</label><textarea data-shot-prompt="' + i + '-' + j + '" rows="4">' + esc(sh.prompt) + '</textarea>' +
       '<div class="note">出场：' + esc((sh.characters || []).join('、')) + (sh.scene ? ' · 场景：' + esc(sh.scene) : '') + '</div>' +
-      (job && job.status === 'done' && job.files && job.files.length ? '<video controls src="' + esc(job.files[0].url) + '" style="width:100%;border-radius:8px;margin-top:6px"></video>' : '') +
+      (job && job.status === 'done' && job.files && job.files.length ? fileHtml(job.files[0], job.files) : '') +
       '</div>';
   });
   h += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">' +
