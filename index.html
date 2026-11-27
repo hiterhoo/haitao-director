@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>海涛AI导演台</title>
+<style>
+* { box-sizing: border-box; }
+:root { --bg:#f3f4f6; --card:#ffffff; --header-bg:#ffffff; --border:#e5e7eb; --border-strong:#d1d5db; --text:#1f2937; --muted:#6b7280; --input-bg:#ffffff; --small-bg:#e5e7eb; --bar-bg:#e5e7eb; --name:#374151; --link:#2563eb; --logo:#2563eb; }
+body.dark { --bg:#111827; --card:#1f2937; --header-bg:#111827; --border:#374151; --border-strong:#4b5563; --text:#f3f4f6; --muted:#9ca3af; --input-bg:#111827; --small-bg:#374151; --bar-bg:#374151; --name:#d1d5db; --link:#93c5fd; --logo:#60a5fa; }
+body { font-family: system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--border-strong); background: var(--header-bg); }
+header b { font-size: 16px; }
+header span { font-size: 12px; color: var(--muted); }
+main { max-width: 960px; margin: 0 auto; padding: 12px 16px 32px; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tabs button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--card); color: var(--text); cursor: pointer; }
+.tabs button.on { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 12px; }
+label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+input, select, textarea { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--input-bg); color: var(--text); }
+#bl-bar { position: fixed; left: 12px; bottom: 12px; z-index: 50; display: flex; align-items: center; gap: 8px; }
+#theme-btn { background: var(--card); color: var(--text); border: 1px solid var(--border-strong); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.18); display: inline-flex; align-items: center; }
+#ver-bl { font-size: 12px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+/* 桌面版：标签页放左侧竖排，内容在右；手机版保持顶部横排不变 */
+@media (min-width: 900px) {
+  main { display: grid; grid-template-columns: 140px minmax(0, 1fr); column-gap: 16px; max-width: 1180px; align-items: start; }
+  .tabs { grid-column: 1; grid-row: 1 / span 99; flex-direction: column; flex-wrap: nowrap; position: sticky; top: 12px; }
+  .tabs button { width: 100%; justify-content: flex-start; }
+  main > section { grid-column: 2; min-width: 0; }
+}
+button.go { margin-top: 14px; background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; cursor: pointer; }
+button.small { background: var(--small-bg); color: var(--text); border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.job { border-bottom: 1px solid var(--border); padding: 8px 0; font-size: 13px; }
+.bar { height: 8px; background: var(--bar-bg); border-radius: 4px; margin: 6px 0; overflow: hidden; }
+.bar > div { height: 100%; background: #2563eb; border-radius: 4px; transition: width .5s; }
+.bar > div.done { background: #16a34a; }
+.bar > div.failed { background: #dc2626; }
+.result img, .result video, .job img, .job video { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: block; }
+.result video, .job video { max-height: 75vh; object-fit: contain; background: #000; }
+.result audio, .job audio { width: 100%; margin-top: 8px; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.thumbs .t { position: relative; width: 72px; }
+.thumbs img, .thumbs video { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; }
+.thumbs .t button { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.7); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 11px; }
+.thumbs .t span { display: block; font-size: 10px; color: var(--muted); word-break: break-all; }
+.assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+.asset { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px; font-size: 12px; }
+.asset img, .asset video { width: 100%; height: auto; border-radius: 6px; display: block; }
+.asset audio { width: 100%; }
+.asset .name { word-break: break-all; color: var(--name); margin: 4px 0; }
+.asset .meta { color: var(--muted); font-size: 11px; }
+.ic { width:14px; height:14px; vertical-align:-2px; margin-right:5px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.ic.lg { width:18px; height:18px; margin-right:6px; color:var(--logo); }
+.tabs button, button.small, button.go { display:inline-flex; align-items:center; }
+header .logo b { display:inline-flex; align-items:center; }
+.card > b { display:inline-flex; align-items:center; }
+.stat { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); margin-top:3px; }
+.stat .bar2 { width:90px; height:8px; background:var(--bar-bg); border-radius:4px; overflow:hidden; flex:none; }
+.stat .bar2 > div { height:100%; width:0; border-radius:4px; transition:width .5s; }
+.stat .lab { width:34px; flex:none; }
+.dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><b><svg class="ic lg" viewBox="0 0 24 24"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>海涛AI导演台</b> <span>生图 · 视频 · 音频 · 资产 · 剧本</span> <span id="ver" class="note"></span></div>
+  <div id="machine-stat" style="min-width:235px">
+    <div class="stat" style="margin-top:0"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg><span id="gpu-name" style="color:var(--link)">GPU 检测中…</span></div>
+    <div class="stat"><span class="lab">利用率</span><div class="bar2"><div id="gpu-util-bar"></div></div><span id="gpu-util-txt">-</span></div>
+    <div class="stat"><span class="lab">显存</span><div class="bar2"><div id="gpu-mem-bar"></div></div><span id="gpu-mem-txt">-</span></div>
+    <div class="stat"><span class="lab">温度</span><div class="bar2"><div id="gpu-temp-bar"></div></div><span id="gpu-temp-txt">-</span><span id="gpu-power"></span></div>
+    <div class="stat"><span class="dot" id="health-dot" style="background:#6b7280"></span><span id="health-txt">正在检查 ComfyUI…</span></div>
+  </div>
+</header>
+<main>
+  <div class="tabs">
+    <button data-tab="script" class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>剧本</button>
+    <button data-tab="img"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>生图</button>
+    <button data-tab="video"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>视频</button>
+    <button data-tab="audio"><svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>音频</button>
+    <button data-tab="assets"><svg class="ic" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>资产管理</button>
+  </div>
+
+<section class="card" id="tab-img" hidden>
+    <label>模式</label>
+    <select id="img-mode" onchange="imgModeChange()"><option>文生图</option><option>图生图</option></select>
+    <div id="img-upload-box" hidden>
+      <label>参考图（图生图，1 张）</label>
+      <input type="file" id="img-file" accept="image/*" onchange="uploadFiles('image', this, imgFiles, renderImgFiles)">
+      <div class="thumbs" id="img-files"></div>
+      <!-- 重绘强度 denoise：只在图生图时生效。原理是先给原图加噪声再重画，
+           denoise 就是加噪声的强度：0=几乎不动原图，1=完全重画（近似文生图）。
+           0.75 中等改动（保留构图/姿势/颜色）；0.92 接近重画（适合拿定妆图当参考画新场景）。 -->
+      <label>重绘强度 denoise（图生图改动原图的程度）</label>
+      <input type="range" id="img-denoise" min="0.05" max="1" step="0.01" value="0.75" oninput="document.getElementById('img-denoise-val').textContent=this.value">
+      <span id="img-denoise-val">0.75</span>
+      <p class="note">0 = 几乎不动原图，1 = 完全重画。0.75 中等改动（保留构图、姿势、颜色）；0.92 接近重画（适合拿定妆图当参考、按新提示词画新场景）。只在图生图时生效。</p>
+    </div>
+    <label>提示词</label>
+    <textarea id="img-prompt" rows="2"></textarea>
+    <div class="grid">
+      <div><label>比例</label><select id="img-ratio"><option>9:16</option><option>16:9</option><option>1:1</option><option>4:3</option><option>3:4</option></select></div>
+      <div><label>分辨率</label><select id="img-res"><option>1536×864</option><option>1344×768</option><option>1024×1024</option><option>768×1344</option><option>1024×1536</option></select></div>
+      <div><label>张数</label><select id="img-count"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+      <div><label>风格</label><select id="img-style"><option value="根据提示词自动生成">根据提示词自动生成</option><option>漫画</option><option>写实</option><option>日漫</option><option>水彩</option></select></div>
+      <div><label>CFG（Qwen-Image 2.1 默认 1，后端锁定）</label><input value="1" disabled></div>
+      <div><label>种子</label><input id="img-seed" placeholder="随机"></div>
+    </div>
+    <label>负面提示词</label>
+    <input id="img-neg" placeholder="例如：模糊、变形、多余手指">
+    <button class="go" onclick="submitJob('/api/image', imgParams())"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></svg>生成图片</button>
+    <div class="result" id="img-result"><p class="note">生成结果会直接显示在这里，不用进 ComfyUI 看。</p></div>
+  </section>
+
+  <section class="card" id="tab-video" hidden>
+    <label>项目名 / 镜号（视频文件名按 项目名-镜号-时间 生成）</label>
+    <div style="display:flex;gap:8px"><input id="style-project" placeholder="项目名，如 鼠团团" style="flex:1"><input id="style-shot" placeholder="镜号，如 01" style="width:90px"></div>
+    <label>模式</label>
+    <select id="video-mode" onchange="videoModeChange()"><option>文生视频</option><option>图生视频</option><option selected>参考生视频</option><option>首尾帧视频</option></select>
+    <div id="video-img-box">
+      <label id="video-img-label">参考图（最多 9 张）</label>
+      <input type="file" id="video-img-file" accept="image/*" multiple onchange="uploadFiles('image', this, videoImages, renderVideoFiles)">
+      <div class="thumbs" id="video-images"></div>
+    </div>
+    <div id="video-video-box">
+      <label>参考视频（最多 3 条）</label>
+      <input type="file" id="video-video-file" accept="video/*" multiple onchange="uploadFiles('video', this, videoVideos, renderVideoFiles)">
+      <div class="thumbs" id="video-videos"></div>
+    </div>
+    <div id="video-audio-box">
+      <label>参考音频（最多 3 条，每段 2–15 秒）</label>
+      <input type="file" id="video-audio-file" accept="audio/*" multiple onchange="uploadFiles('audio', this, videoAudios, renderVideoFiles)">
+      <div class="thumbs" id="video-audios"></div>
+    </div>
+    <label>提示词 / 描述</label>
+    <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+      <select id="video-tpl" onchange="applyVideoTpl()" style="flex:1">
+        <option value="">镜头模板（可选，一键填入）</option>
+        <option value="establishing">建立镜头：大全景交代环境</option>
+        <option value="medium">中景对话：人物半身，自然交流</option>
+        <option value="closeup">特写：面部情绪与细节</option>
+        <option value="overshoulder">过肩：对话视角</option>
+        <option value="tracking">跟拍：跟随人物移动</option>
+        <option value="action">动作戏：快速运动与冲击感</option>
+      </select>
+    </div>
+    <textarea id="video-prompt" rows="2"></textarea>
+    <div class="grid">
+      <div><label>比例</label><select id="video-ratio"><option>9:16</option><option>16:9</option><option>1:1</option></select></div>
+      <div><label>时长</label><select id="video-dur"><option>5秒</option><option>10秒</option></select></div>
+      <div><label>步数（已锁死 8 步 Turbo）</label><input value="8步 Turbo" disabled></div>
+      <div><label>参考强度</label><select id="video-ref"><option>0.5</option><option>0.8</option><option selected>1.0</option></select></div>
+      <div><label>运镜</label><select id="video-cam"><option>推镜头</option><option>拉远</option><option>左平移</option><option>右平移</option><option>升降</option></select></div>
+    </div>
+    <label>补充功能</label>
+    <div><label><input type="checkbox" class="video-extra" value="放大到1080P"> 放大到 1080P（生成完自动超分，多一条任务）</label></div>
+    <p class="note">文生视频：纯文字描述生成；图生视频：1 张图作首帧；首尾帧：首帧 + 尾帧 2 张；参考生视频：最多 9 张参考图 + 3 条参考视频 + 3 条参考音频。主分辨率 1344×768，1080P 靠放大。</p>
+    <button class="go" onclick="submitJob('/api/video', videoParams())"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></svg>生成视频</button>
+    <div class="result" id="video-result"><p class="note">生成结果会直接显示在这里。</p></div>
+  </section>
+
+  <section class="card" id="tab-audio" hidden>
+    <label>音色来源</label>
+    <select id="audio-vmode" onchange="audioModeChange()"><option>设计音色</option><option>克隆音色</option></select>
+    <div id="audio-design-box">
+      <label>音色预设（固定音色，同预设每次声音一致）</label>
+      <select id="audio-preset"><option>男声</option><option>女声</option><option>自定义</option></select>
+      <label>自定义音色描述（选「自定义」时生效；填了就以这里为准）</label>
+      <input id="audio-vdesc" placeholder="例如：A warm middle-aged female voice speaking Mandarin Chinese, gentle tone">
+    </div>
+    <div id="audio-clone-box" hidden>
+      <label>参考音频（克隆用，建议 3–10 秒清晰人声）</label>
+      <input type="file" id="audio-ref-file" accept="audio/*" onchange="uploadFiles('audio', this, audioRefFiles, renderAudioRef)">
+      <div class="thumbs" id="audio-ref-files"></div>
+      <label>参考音频里说的原话（和录音内容一字不差）</label>
+      <input id="audio-ref-text" placeholder="把参考音频里说的话原样打出来">
+    </div>
+    <label>台词 / 文本</label>
+    <textarea id="audio-text" rows="2"></textarea>
+    <div class="grid">
+      <div><label>情绪</label><select id="audio-emo"><option selected>平静</option><option>紧张</option><option>愤怒</option><option>悲伤</option></select></div>
+      <div><label>种子</label><input id="audio-seed" placeholder="随机"></div>
+    </div>
+    <p class="note">设计音色：用文字描述生成音色，男声/女声预设带固定种子，同一预设每次都是同一个声音；种子填数字可锁定自定义音色。克隆音色：上传一段参考人声+对应原话，照着这个声音念新台词。</p>
+    <button class="go" onclick="submitAudio()"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></svg>生成音频</button>
+    <div class="result" id="audio-result"><p class="note">生成结果会直接显示在这里，可试听。</p></div>
+  </section>
+
+  <section class="card" id="tab-assets" hidden>
+    <b><svg class="ic" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>资产管理</b> <span class="note">和 ComfyUI 的 output 目录同步，生成完自动出现在这里。</span>
+    <div style="margin-top:8px">
+      <button class="small" onclick="assetFilter='all'; assetPage=1; loadAssets()"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>全部</button>
+      <button class="small" onclick="assetFilter='image'; assetPage=1; loadAssets()"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>图片</button>
+      <button class="small" onclick="assetFilter='video'; assetPage=1; loadAssets()"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>视频</button>
+<button class="small" onclick="clearAssets()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>清空资产</button>
+      <button class="small" onclick="assetFilter='audio'; assetPage=1; loadAssets()"><svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>音频</button>
+      <button class="small" onclick="loadAssets()"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>刷新</button>
+    </div>
+    <div class="assets" id="assets">加载中…</div>
+    <div id="assets-pager" style="margin-top:8px"></div>
+  </section>
+
+  <section class="card" id="tab-script">
+    <b><svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>剧本拆分</b> <span class="note">上传整本剧本，AI 自动拆成一集一集，并提取每集的角色和场景，可单独生成资产。</span>
+    <label>AI 接口设置（OpenAI 兼容协议；填自己的 Key，只存本机，不进代码）</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <select id="llm-preset" onchange="llmPreset()" style="flex:1;min-width:140px">
+        <option value="">服务商预设…</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="openai">OpenAI</option>
+        <option value="hunyuan">腾讯混元</option>
+        <option value="qwen">阿里通义千问</option>
+        <option value="moonshot">Moonshot Kimi</option>
+        <option value="zhipu">智谱 GLM</option>
+        <option value="custom">自定义</option>
+      </select>
+      <input id="llm-model" placeholder="模型名，如 deepseek-chat" style="flex:1;min-width:160px">
+    </div>
+    <input id="llm-base" placeholder="API 地址，如 https://api.deepseek.com/v1" style="margin-top:6px">
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <input id="llm-key" type="password" placeholder="API Key" style="flex:1">
+      <button class="small" onclick="saveLlmCfg()">保存设置</button>
+      <button class="small" onclick="testLlm()">测试连接</button>
+      <button class="small" onclick="clearLlmKey()">清除 Key</button>
+    </div>
+    <div class="note" id="llm-status"></div>
+    <label>剧本标题（可选，不填 AI 自动概括）</label>
+    <input id="script-title" placeholder="如 鼠团团初秋篇">
+    <label>剧本文本（粘贴，或选文件读入）</label>
+    <textarea id="script-text" rows="6" placeholder="把整本剧本粘贴进来；有「第X集」标记会按标记分集，没有就由 AI 按剧情拆。"></textarea>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+      <input type="file" id="script-file" accept=".txt,.md" onchange="loadScriptFile(this)" style="flex:1">
+      <button class="go" style="margin-top:0" onclick="splitScript()">AI 拆分剧本</button>
+    </div>
+    <div class="note" id="script-status"></div>
+    <label>已保存的拆分结果</label>
+    <div style="display:flex;gap:8px">
+      <select id="script-list" style="flex:1"></select>
+      <button class="small" onclick="openScript()">打开</button>
+      <button class="small" onclick="deleteScript()">删除</button>
+    </div>
+    <div id="script-result" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card">
+    <b><svg class="ic" viewBox="0 0 24 24"><path d="m12 2 9 4.9-9 4.9-9-4.9Z"/><path d="m3 11.9 9 4.9 9-4.9"/><path d="m3 16.9 9 4.9 9-4.9"/></svg>生成队列</b> <button class="small" onclick="clearJobs()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>清空队列</button>
+    <div id="jobs" style="margin-top:6px">暂无任务。</div>
+  </section>
+
+  <section class="card">
+    <b><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>平台更新</b> <span class="note">上传新版源码包（.tar.gz）即可更新，不用重新部署实例；配了远程更新地址的实例还会自动检查并更新。会自动备份旧版并重启，新版起不来自动回滚；data 数据（任务、剧本、Key）不受影响。建议队列空闲时更新。</span>
+    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+      <input type="file" id="upd-file" accept=".gz,.tgz">
+      <input type="password" id="upd-token" placeholder="更新口令（实例 data/update_token.txt 里）" style="min-width:270px">
+      <button class="small" onclick="doUpdate()">上传并更新</button>
+      <button class="small" onclick="checkUpdate()">检查远程更新</button>
+      <button class="small" id="upd-remote-btn" onclick="applyRemoteUpdate()" hidden>一键更新到新版</button>
+      <span id="upd-status" class="note"></span>
+    </div>
+  </section>
+</main>
+<div id="bl-bar"><button id="theme-btn" onclick="cycleTheme()" title="点击切换：自动 → 白天 → 夜晚"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg><span id="theme-label">自动</span></button><span id="ver-bl" title="平台版本号">v?</span></div>
+<script>
+const $ = id => document.getElementById(id);
+const IC = {retry:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.7 9.7 0 0 0-6.7 2.7L3 8"/><path d="M3 3v5h5"/></svg>', copy:'<svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>', pen:'<svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>', trash:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>', skip:'<svg class="ic" viewBox="0 0 24 24"><path d="m5 4 10 8-10 8z"/><path d="M19 5v14"/></svg>', image:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>', video:'<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>', audio:'<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>', download:'<svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>'};
+let imgFiles = [], videoImages = [], videoVideos = [], videoAudios = [], audioRefFiles = [];
+let assetFilter = 'all';
+let lastJobs = {};
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  ['img','video','audio','assets','script'].forEach(t => $('tab-'+t).hidden = t !== b.dataset.tab);
+  if (b.dataset.tab === 'assets') loadAssets();
+  if (b.dataset.tab === 'script') { loadLlmCfg(); loadScriptList(); }
+});
+function extras(cls){ return [...document.querySelectorAll('.'+cls+':checked')].map(e => e.value); }
+function imgModeChange(){ $('img-upload-box').hidden = $('img-mode').value !== '图生图'; }
+const VIDEO_TPL = {
+  establishing: {prompt: '大全景建立镜头，交代环境与空间关系，人物比例较小，氛围感强', camera: '拉远'},
+  medium: {prompt: '中景对话镜头，人物半身入画，表情自然，目光交流，背景适度虚化', camera: '推镜头'},
+  closeup: {prompt: '面部特写，捕捉细微情绪变化，眼神与微表情清晰，浅景深', camera: '推镜头'},
+  overshoulder: {prompt: '过肩镜头，前景人物肩背虚化，焦点在对面说话的人脸上，对话感强', camera: '推镜头'},
+  tracking: {prompt: '跟拍镜头，镜头跟随人物移动，保持主体居中，背景流动有速度感', camera: '右平移'},
+  action: {prompt: '动作戏镜头，快速运动与冲击感，动态模糊适度，节奏紧凑', camera: '推镜头'},
+};
+function applyVideoTpl(){
+  const key = ($('video-tpl') || {}).value;
+  if (!key || !VIDEO_TPL[key]) return;
+  const t = VIDEO_TPL[key];
+  const ta = $('video-prompt');
+  if (ta) ta.value = t.prompt;
+  const cam = $('video-cam');
+  if (cam && t.camera) {
+    for (let i = 0; i < cam.options.length; i++) {
+      if (cam.options[i].text === t.camera || cam.options[i].value === t.camera) { cam.selectedIndex = i; break; }
+    }
+  }
+}
+function videoModeChange(){
+  const m = $('video-mode').value;
+  $('video-img-label').textContent = m === '图生视频' ? '首帧图（1 张）' : m === '首尾帧视频' ? '首帧 + 尾帧（2 张）' : '参考图（最多 9 张）';
+  $('video-img-box').hidden = m === '文生视频';
+  $('video-video-box').hidden = m !== '参考生视频';
+  $('video-audio-box').hidden = m !== '参考生视频';
+}
+async function uploadFiles(kind, input, list, render){
+  const limits = {image: 9, video: 3, audio: 3};
+  window._pendingUploads = window._pendingUploads || {image:0, video:0, audio:0};
+  const files = [...input.files];
+  if (list.length + files.length + (window._pendingUploads[kind] || 0) > limits[kind]) { 
+    alert('最多 ' + limits[kind] + ' 个' + (kind==='image'?'图片':kind==='video'?'视频':'音频')); 
+    input.value=''; 
+    return; 
+  }
+  for (const f of files) {
+    window._pendingUploads[kind]++;
+    const fd = new FormData(); fd.append('kind', kind); fd.append('file', f);
+    try {
+      const r = await fetch('/api/upload', {method:'POST', body: fd});
+      const d = await r.json();
+      if (d.error) { alert(d.error); continue; }
+      (d.files || []).forEach(x => list.push(x));
+    } finally {
+      window._pendingUploads[kind]--;
+    }
+  }
+  input.value = ''; render();
+}
+function thumbHtml(list, onRemove){
+  return list.map((f, i) => {
+    let mediaHtml = '';
+    if (f.kind === 'image') {
+      mediaHtml = '<img src="' + esc(f.url) + '">';
+    } else if (f.kind === 'video') {
+      mediaHtml = '<video src="' + esc(f.url) + '" muted preload="metadata"></video>';
+    } else if (f.kind === 'audio') {
+      mediaHtml = '<audio src="' + esc(f.url) + '" controls preload="metadata"></audio>';
+    }
+    return '<div class="t">' + mediaHtml + '<span>' + esc(f.filename) + '</span><button onclick="' + onRemove + '(' + i + ')">×</button></div>';
+  }).join('');
+}
+function renderImgFiles(){ $('img-files').innerHTML = thumbHtml(imgFiles, 'removeImgFile'); }
+function renderVideoFiles(){
+  $('video-images').innerHTML = thumbHtml(videoImages, 'removeVideoImage');
+  $('video-videos').innerHTML = thumbHtml(videoVideos, 'removeVideoVideo');
+  $('video-audios').innerHTML = thumbHtml(videoAudios, 'removeVideoAudio');
+}
+function removeImgFile(i){ imgFiles.splice(i,1); renderImgFiles(); }
+function removeVideoImage(i){ videoImages.splice(i,1); renderVideoFiles(); }
+function removeVideoVideo(i){ videoVideos.splice(i,1); renderVideoFiles(); }
+function removeVideoAudio(i){ videoAudios.splice(i,1); renderVideoFiles(); }
+function imgParams(){ return {mode:$('img-mode').value, prompt:$('img-prompt').value, negative:$('img-neg').value, ratio:$('img-ratio').value, resolution:$('img-res').value, count:$('img-count').value, style:$('img-style').value, seed:$('img-seed').value, denoise:$('img-denoise').value, images: imgFiles.map(f=>f.filename)}; }
+function videoParams(){
+  const m = $('video-mode').value;
+  const imgs = videoImages.map(f=>f.filename);
+  return {mode:m, prompt:$('video-prompt').value, project:$('style-project').value, shot:$('style-shot').value, ratio:$('video-ratio').value, duration:$('video-dur').value, ref_strength:$('video-ref').value, camera:$('video-cam').value, extra:extras('video-extra'),
+    first_image: m==='文生视频' ? null : (imgs[0] || null), last_image: m==='首尾帧视频' ? (imgs[1] || null) : null,
+    images: m==='文生视频' ? [] : m==='参考生视频' ? imgs : imgs.slice(0, m==='首尾帧视频'?2:1),
+    videos: m==='参考生视频' ? videoVideos.map(f=>f.filename) : [],
+    audios: m==='参考生视频' ? videoAudios.map(f=>f.filename) : []};
+}
+function audioModeChange(){ const m = $('audio-vmode').value; $('audio-design-box').hidden = m !== '设计音色'; $('audio-clone-box').hidden = m !== '克隆音色'; }
+function renderAudioRef(){ $('audio-ref-files').innerHTML = thumbHtml(audioRefFiles, 'removeAudioRef'); }
+function removeAudioRef(i){ audioRefFiles.splice(i,1); renderAudioRef(); }
+function audioParams(){ return {voice_mode:$('audio-vmode').value, preset:$('audio-preset').value, voice_desc:$('audio-vdesc').value, text:$('audio-text').value, emotion:$('audio-emo').value, seed:$('audio-seed').value, ref_audio: audioRefFiles.length ? audioRefFiles[0].filename : null, ref_text:$('audio-ref-text').value}; }
+function submitAudio(){ if ($('audio-vmode').value === '克隆音色' && !audioRefFiles.length) { alert('克隆音色要先上传参考音频'); return; } submitJob('/api/audio', audioParams()); }
+function coverOf(files, v){
+  const base = v.filename.replace(/\.mp4$/i, '');
+  const c = (files || []).find(x => x.filename === base + '_cover.jpg');
+  return c ? c.url : '';
+}
+function fileHtml(f, files){
+  if (f.kind === 'image') return '<img src="'+esc(f.url)+'" alt="'+esc(f.filename)+'">';
+  if (f.kind === 'video') { const cov = files ? coverOf(files, f) : ''; return '<video src="'+esc(f.url)+'" controls preload="metadata"' + (cov ? ' poster="'+esc(cov)+'"' : '') + '></video>'; }
+  if (f.kind === 'audio') return '<audio src="'+esc(f.url)+'" controls></audio>';
+  return '<a href="'+esc(f.url)+'">'+esc(f.filename)+'</a>';
+}
+let _submitting = false;
+async function submitJob(url, params){ saveParams();
+  if (_submitting) return;
+  _submitting = true;
+  const btns = document.querySelectorAll('button.go'); btns.forEach(b => b.disabled = true);
+  try {
+    const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(params)});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d.error) alert('提交失败：' + (d.error || ('HTTP ' + r.status)));
+  } catch (e) { alert('提交失败：' + e.message); }
+  btns.forEach(b => b.disabled = false);
+  _submitting = false;
+  loadJobs();
+}
+function jobStatusText(j){
+  if (j.status === 'queued') return '排队中' + (j.queue_position ? ' · 第 ' + j.queue_position + ' 位' : '');
+  if (j.status === 'running') return '正在生成 ' + (j.progress||0) + '% · 已用 ' + (j.elapsed||0) + ' 秒' + (j.node ? ' · 节点 ' + j.node : '');
+  if (j.status === 'done') return '已完成 · 用时 ' + (j.elapsed||0) + ' 秒';
+  if (j.status === 'failed') return '失败' + (j.note ? ' · ' + j.note : '');
+  return j.status;
+}
+let lastJobsSig = '';
+let lastJobsData = {};
+async function retryJob(id){ const r = await fetch('/api/jobs/' + id + '/retry', {method:'POST'}); const d = await r.json().catch(() => ({})); if (!d.ok) alert(d.error || '重试失败'); loadJobs(); }
+async function repeatJob(id){ const j = lastJobsData[id]; if (!j) return; const url = j.kind === 'video' ? '/api/video' : j.kind === 'audio' ? '/api/audio' : '/api/image'; const p = Object.assign({}, j.params || {}); delete p.seed; await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(p)}); loadJobs(); }
+async function renameJob(id){ const j = lastJobsData[id]; if (!j) return; const name = prompt('改名', (j.params && j.params.name) || ''); if (name === null) return; await fetch('/api/jobs/' + id, {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:name})}); loadJobs(); }
+async function deleteJob(id){ if (!confirm('确定删除该任务及磁盘文件吗？')) return; const r = await fetch('/api/jobs/' + id, {method:'DELETE'}); const d = await r.json().catch(() => ({})); if (!d.ok) alert(d.error || '删除失败'); loadJobs(); }
+async function tailJob(id){ const r = await fetch('/api/tail/' + id, {method:'POST'}); const d = await r.json(); if (d.ok) { alert('尾帧已抽取并入队：' + d.tail); loadJobs(); } else alert(d.error || '尾帧续接失败'); }
+async function clearAssets(){ if (!confirm('确定清空全部资产文件吗？已完成/失败的任务记录也会一并清除。')) return; const r = await fetch('/api/assets/clear', {method:'POST'}); const d = await r.json(); alert('已删除 ' + (d.deleted || 0) + ' 个文件，清除 ' + (d.jobs_removed || 0) + ' 条已完成/失败任务记录'); loadAssets(); loadJobs(); }
+async function clearJobs(){ if (!confirm('确定清空队列吗？已完成、失败和排队中的任务记录及文件都会删除，正在运行的任务保留。')) return; const r = await fetch('/api/jobs/clear', {method:'POST'}); const d = await r.json(); alert('已清除 ' + (d.removed || 0) + ' 条任务' + (d.kept_running ? '，保留 ' + d.kept_running + ' 条运行中' : '')); lastJobsSig = ''; loadJobs(); }
+function notifyDone(j){ try { if (window.Notification && Notification.permission === 'granted') new Notification('任务完成', {body: (j.params && j.params.name) || j.id}); } catch (e) {} }
+function saveParams(){ try { const o = {}; document.querySelectorAll('input, select, textarea').forEach(el => { if (el.id && el.type !== 'file' && el.id !== 'llm-key' && el.id !== 'script-text') o[el.id] = el.type === 'checkbox' ? el.checked : el.value; }); localStorage.setItem('h3params2', JSON.stringify(o)); } catch (e) {} }
+function restoreParams(){ try { const o = JSON.parse(localStorage.getItem('h3params2') || '{}'); Object.keys(o).forEach(id => { const el = document.getElementById(id); if (!el || el.type === 'file') return; if (el.type === 'checkbox') el.checked = !!o[id]; else el.value = o[id]; }); } catch (e) {} }
+async function loadJobs(){
+  let d;
+  try { const r = await fetch('/api/jobs'); d = await r.json(); } catch (e) { return; }
+  if (!d.jobs) return;
+  d.jobs.forEach(j=>{ lastJobsData[j.id]=j; });
+  // 清理不在当前列表中的任务
+  const currentIds = new Set(d.jobs.map(j => j.id));
+  for (const id of Object.keys(lastJobsData)) {
+    if (!currentIds.has(id)) delete lastJobsData[id];
+  }
+  for (const id of Object.keys(lastJobs)) {
+    if (!currentIds.has(id)) delete lastJobs[id];
+  }
+  // 队列每 2 秒轮询，但不要每次都整体重建 DOM：<video>/<audio> 每 2 秒
+  // 被销毁重建就永远播不了（加载元数据要约 30 秒）。只有任务列表
+  // 的状态/进度（取整到 5%）/结果变化时才重建；正在播放的媒体不重建。
+  const sig = JSON.stringify(d.jobs.map(j => [j.id, j.status, Math.round((j.progress||0)/5), (j.files||[]).map(f=>f.filename).join(','), (j.params && j.params.name) || '', j.note || '']));
+  const playing = [...document.querySelectorAll('video, audio')].some(el => !el.paused);
+  if (sig !== lastJobsSig && !playing) {
+    lastJobsSig = sig;
+    $('jobs').innerHTML = d.jobs.length ? d.jobs.map(j => {
+    const cls = j.status === 'done' ? 'done' : j.status === 'failed' ? 'failed' : '';
+    let html = '<div class="job"><b>' + (IC[j.kind] || '') + esc(j.kind) + '</b> · ' + esc(jobStatusText(j)) + (j.note ? ' · ' + esc(j.note) : '') +
+      '<div class="bar"><div class="' + cls + '" style="width:' + (j.progress||0) + '%"></div></div>';
+    if (j.status === 'done' && j.files && j.files.length) html += j.files.map(f=>fileHtml(f, j.files)).join('');
+    html += '<div class="meta">' + ((j.params && j.params.name) ? esc(j.params.name) + ' · ' : '') + 'seed ' + ((j.params && j.params.seed) || '-') + '</div><div><button class="small" onclick="retryJob(\''+j.id+'\')">' + IC.retry + '重试</button> <button class="small" onclick="repeatJob(\''+j.id+'\')">' + IC.copy + '同参数再来一条</button> <button class="small" onclick="renameJob(\''+j.id+'\')">' + IC.pen + '改名</button> <button class="small" onclick="deleteJob(\''+j.id+'\')">' + IC.trash + '删除任务</button>' + (j.kind === 'video' && j.status === 'done' ? ' <button class="small" onclick="tailJob(\''+j.id+'\')">' + IC.skip + '尾帧续接</button>' : '') + '</div>';
+    return html + '</div>';
+  }).join('') : '暂无任务。';
+  }
+  // 刚完成的任务，结果也显示到对应页签的结果区（只在状态刚变 done 时更新一次）
+  d.jobs.forEach(j => {
+    if (j.status === 'done' && j.files && j.files.length && lastJobs[j.id] !== 'done') {
+      const target = j.kind === 'image' ? 'img-result' : j.kind === 'video' ? 'video-result' : 'audio-result';
+      $(target).innerHTML = '<p class="note">最新结果 · 任务 ' + j.id + '</p>' + j.files.map(f=>fileHtml(f, j.files)).join('');
+notifyDone(j);
+    }
+    lastJobs[j.id] = j.status;
+  });
+}
+let assetPage = 1;
+const ASSET_PAGE_SIZE = 20;
+async function loadAssets(){
+  const r = await fetch('/api/assets'); const d = await r.json();
+  const list = (d.assets || []).filter(a => assetFilter === 'all' || a.kind === assetFilter);
+  const pages = Math.max(1, Math.ceil(list.length / ASSET_PAGE_SIZE));
+  if (assetPage > pages) assetPage = pages;
+  if (assetPage < 1) assetPage = 1;
+  const pageItems = list.slice((assetPage - 1) * ASSET_PAGE_SIZE, assetPage * ASSET_PAGE_SIZE);
+  $('assets').innerHTML = pageItems.length ? pageItems.map(a => '<div class="asset">' + fileHtml({kind:a.kind, url:a.url, filename:a.filename}) +
+    '<div class="name">' + esc(a.filename) + '</div><div class="meta">' + esc(a.path) + ' · ' + (a.size/1024).toFixed(0) + ' KB · ' + new Date(a.mtime*1000).toLocaleString() + '</div>' +
+    '<div style="margin-top:4px"><a href="' + esc(a.url) + '" download style="color:var(--link)">' + IC.download + '下载</a> <button class="small" onclick="deleteAsset(\'' + a.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')">删除</button></div></div>').join('') : '暂无资产。';
+  $('assets-pager').innerHTML = list.length > ASSET_PAGE_SIZE
+    ? '<button class="small" ' + (assetPage <= 1 ? 'disabled' : '') + ' onclick="assetPage--; loadAssets()">上一页</button> <span class="note">第 ' + assetPage + ' / ' + pages + ' 页（共 ' + list.length + ' 个，每页 ' + ASSET_PAGE_SIZE + ' 个）</span> <button class="small" ' + (assetPage >= pages ? 'disabled' : '') + ' onclick="assetPage++; loadAssets()">下一页</button>'
+    : '';
+}
+async function deleteAsset(path){
+  if (!confirm('确定删除 ' + path + ' 吗？')) return;
+  await fetch('/api/assets/' + encodeURIComponent(path), {method:'DELETE'});
+  loadAssets();
+}
+function setBar(id, pct){ const el = $(id); if (!el) return; const p = Math.max(0, Math.min(100, pct || 0)); el.style.width = p + '%'; el.style.background = p < 70 ? '#22c55e' : p < 90 ? '#eab308' : '#ef4444'; }
+async function loadHealth(){
+  try {
+    const r = await fetch('/api/health'); const d = await r.json();
+    window.__ver = d.version || '';
+    const ve = $('ver'); if (ve) ve.textContent = d.version ? ('v' + d.version) : '';
+    const vb = $('ver-bl'); if (vb) vb.textContent = d.version ? ('v' + d.version) : 'v?';
+    $('health-dot').style.background = d.comfyui_online ? '#22c55e' : '#ef4444';
+    let t = (d.mock ? '模拟模式' : '真实模式') + ' · ComfyUI ' + (d.comfyui_online ? '在线' : '未连接');
+    if (!d.mock) t += ' · 队列 运行 ' + (d.comfyui_running||0) + ' / 排队 ' + (d.comfyui_pending||0);
+    t += ' · 磁盘 ' + d.disk_free_gb + 'G';
+    if (d.disk_free_gb < 8) { t += '（不足！）'; document.querySelector("header").style.background = "#7f1d1d"; } else { document.querySelector("header").style.background = ""; }
+    $('health-txt').textContent = t;
+  } catch(e) { $('health-dot').style.background = '#ef4444'; $('health-txt').textContent = '后端未连接'; }
+}
+async function loadGpu(){
+  try {
+    const r = await fetch('/api/gpu'); const d = await r.json();
+    if (d.ok && d.gpus && d.gpus.length) {
+      const g = d.gpus[0];
+      $('gpu-name').textContent = g.name;
+      setBar('gpu-util-bar', g.util); $('gpu-util-txt').textContent = g.util + '%';
+      setBar('gpu-mem-bar', g.mem_pct); $('gpu-mem-txt').textContent = g.mem_used_gb + '/' + g.mem_total_gb + 'G';
+      setBar('gpu-temp-bar', g.temp); $('gpu-temp-txt').textContent = g.temp + '°C';
+      $('gpu-power').textContent = '· ' + g.power + 'W';
+    } else {
+      $('gpu-name').textContent = 'GPU 未检测到（本机无显卡）';
+      setBar('gpu-util-bar', 0); setBar('gpu-mem-bar', 0); setBar('gpu-temp-bar', 0);
+      $('gpu-util-txt').textContent = '-'; $('gpu-mem-txt').textContent = '-'; $('gpu-temp-txt').textContent = '-'; $('gpu-power').textContent = '';
+    }
+  } catch(e) { $('gpu-name').textContent = 'GPU 信息读取失败'; }
+}
+// ---------- 剧本拆分 ----------
+const LLM_PRESETS = {
+  deepseek: ['https://api.deepseek.com/v1', 'deepseek-chat'],
+  openai: ['https://api.openai.com/v1', 'gpt-4o-mini'],
+  hunyuan: ['https://api.hunyuan.cloud.tencent.com/v1', 'hunyuan-turbo'],
+  qwen: ['https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen-plus'],
+  moonshot: ['https://api.moonshot.cn/v1', 'moonshot-v1-8k'],
+  zhipu: ['https://open.bigmodel.cn/api/paas/v4', 'glm-4-flash']
+};
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function llmPreset(){ const p = LLM_PRESETS[$('llm-preset').value]; if (p) { $('llm-base').value = p[0]; $('llm-model').value = p[1]; } }
+async function loadLlmCfg(){ try { const r = await fetch('/api/llm/config'); const d = await r.json(); $('llm-base').value = d.base_url || ''; $('llm-model').value = d.model || ''; $('llm-key').placeholder = d.has_key ? ('已保存 ' + d.key_hint + '，留空不改') : 'API Key'; $('llm-status').textContent = d.has_key ? ('已配置 Key（' + d.key_hint + '）') : '还没填 Key，填好后点保存设置。'; } catch(e) {} }
+async function saveLlmCfg(){ const body = {base_url: $('llm-base').value.trim(), model: $('llm-model').value.trim()}; const k = $('llm-key').value.trim(); if (k) body.api_key = k; const r = await fetch('/api/llm/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); const d = await r.json(); if (d.ok) { $('llm-key').value = ''; await loadLlmCfg(); $('llm-status').textContent = '已保存。'; } else alert(d.error || '保存失败'); }
+async function testLlm(){ $('llm-status').textContent = '测试中…'; const r = await fetch('/api/llm/test', {method:'POST'}); const d = await r.json(); $('llm-status').textContent = d.ok ? ('连接正常，模型回复：' + d.reply) : ('连接失败：' + (d.error || '')); }
+async function clearLlmKey(){ if (!confirm('确定清除已保存的 API Key？')) return; const r = await fetch('/api/llm/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({clear_key: true})}); const d = await r.json(); if (d.ok) { await loadLlmCfg(); $('llm-status').textContent = 'Key 已清除。'; } }
+function loadScriptFile(input){ const f = input.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { $('script-text').value = rd.result; if (!$('script-title').value) $('script-title').value = f.name.replace(/\.(txt|md)$/i, ''); }; rd.readAsText(f); }
+let curScript = null;
+let splitTimer = null;
+async function splitScript(){ 
+  const text = $('script-text').value; 
+  if (text.trim().length < 50) { alert('先粘贴或上传完整剧本'); return; } 
+  $('script-status').textContent = 'AI 拆分中…';
+  // 禁用按钮
+  const btn = document.querySelector('button[onclick="splitScript()"]');
+  if (btn) btn.disabled = true;
+  const r = await fetch('/api/script/split', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: text, title: $('script-title').value.trim()})});
+  const d = await r.json(); 
+  if (!d.ok) { 
+    $('script-status').textContent = '拆分失败：' + (d.error || ''); 
+    if (btn) btn.disabled = false;
+    return; 
+  } 
+  const tid = d.task_id; 
+  if (splitTimer) clearInterval(splitTimer); 
+  let _polls = 0; 
+  const timer = setInterval(async () => { 
+    try { 
+      if (++_polls > 200) { 
+        clearInterval(timer); 
+        $('script-status').textContent = '拆分超时（已等 10 分钟），请稍后在已保存剧本里查看结果'; 
+        if (btn) btn.disabled = false;
+        return; 
+      } 
+      const rr = await fetch('/api/script/split/' + tid); 
+      const t = await rr.json(); 
+      if (!t.ok) { 
+        clearInterval(timer); 
+        $('script-status').textContent = '查询拆分状态失败：' + (t.error || ''); 
+        if (btn) btn.disabled = false;
+        return; 
+      } 
+      if (t.status === 'running') { 
+        $('script-status').textContent = 'AI 拆分中…' + (t.total ? (' 已完成 ' + t.done + ' / ' + t.total) : ''); 
+        return; 
+      } 
+      clearInterval(timer); 
+      if (t.status === 'done') { 
+        curScript = t.script; 
+        $('script-status').textContent = '拆分完成：' + t.script.episodes.length + ' 集，角色 ' + t.script.characters.length + ' 个，场景 ' + t.script.scenes.length + ' 个。检查修改后点保存。'; 
+        renderScript(); 
+        loadScriptList(); 
+      } else { 
+        $('script-status').textContent = '拆分失败：' + (t.error || ''); 
+      } 
+      if (btn) btn.disabled = false;
+    } catch(e) {}
+  }, 3000); 
+  splitTimer = timer;
+}
+async function loadScriptList(){ try { const cur = $('script-list').value; const r = await fetch('/api/script/list'); const d = await r.json(); $('script-list').innerHTML = (d.scripts || []).map(s => '<option value="' + esc(s.id) + '">' + esc(s.title) + '（' + s.episodes + ' 集）</option>').join('') || '<option value="">暂无</option>'; if (cur && [...$('script-list').options].some(o => o.value === cur)) $('script-list').value = cur; else if (curScript) $('script-list').value = curScript.id; } catch(e) {} }
+async function openScript(){ const id = $('script-list').value; if (!id) return; const r = await fetch('/api/script/' + id); const d = await r.json(); if (d.ok) { curScript = d.script; renderScript(); } }
+async function deleteScript(){ const id = $('script-list').value; if (!id || !confirm('删除这个拆分结果？')) return; await fetch('/api/script/' + id, {method:'DELETE'}); if (curScript && curScript.id === id) { curScript = null; $('script-result').innerHTML = ''; } loadScriptList(); }
+function assetStatusHtml(item, jobMap){
+  const j = item.asset_job ? jobMap[item.asset_job] : null;
+  if (!j) return '';
+  if (j.status === 'done' && j.files && j.files.length) {
+    const f = j.files[0];
+    return '<div style="margin-top:6px"><img src="' + esc(f.url) + '" style="max-width:220px;border-radius:8px;display:block"></div>';
+  }
+  if (j.status === 'failed') return '<div class="note">资产生成失败，可重新生成。</div>';
+  return '<div class="note">资产生成中（' + esc(j.status) + ' ' + (j.progress || 0) + '%）…</div>';
+}
+let renderedScriptId = null;
+async function renderScript(){
+  if (!curScript) { $('script-result').innerHTML = ''; renderedScriptId = null; return; }
+  // 重渲染前先回收未保存编辑（仅当页面上显示的正是这个剧本时），并记住展开的集
+  const openEps = new Set();
+  if (renderedScriptId === curScript.id && document.getElementById('sc-title')) {
+    try { collectScriptEdits(); } catch(e) {}
+    document.querySelectorAll('#script-result details').forEach((d, i) => { if (d.open) openEps.add(i); });
+  }
+  let jobMap = {};
+  try { const r = await fetch('/api/jobs'); const d = await r.json(); (d.jobs || []).forEach(j => jobMap[j.id] = j); } catch(e) {}
+  // 队列列表只回最近 30 条，资产任务不在里面的单独查
+  const wantJobs = [...(curScript.characters || []), ...(curScript.scenes || [])].map(x => x.asset_job)
+    .concat((curScript.episodes || []).flatMap(e => (e.shots || []).map(sh => sh.job_id))).filter(Boolean);
+  await Promise.all(wantJobs.filter(id => !jobMap[id]).map(async id => { try { const r = await fetch('/api/jobs/' + id); const d = await r.json(); if (d.ok && d.job) jobMap[id] = d.job; } catch(e) {} }));
+  const s = curScript;
+  let h = '<label>剧名</label><input id="sc-title" value="' + esc(s.title) + '">';
+  h += '<label>全部角色（' + s.characters.length + '）— 描述可改，生成定妆图后可绑定到角色库</label>';
+  s.characters.forEach((c, i) => {
+    const j = c.asset_job ? jobMap[c.asset_job] : null;
+    const doneFile = (j && j.status === 'done' && j.files && j.files.length) ? (j.files[0].filename || j.files[0].path || '') : '';
+    h += '<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px">' +
+      '<div style="display:flex;gap:8px"><input data-ch-name="' + i + '" value="' + esc(c.name) + '" style="flex:1" placeholder="角色名"><input data-ch-voice="' + i + '" value="' + esc(c.voice_desc) + '" style="flex:1" placeholder="声音特点（可选）"></div>' +
+      '<textarea data-ch-look="' + i + '" rows="2" placeholder="外貌/服装/标志物固定描述" style="margin-top:6px">' + esc(c.look_desc) + '</textarea>' +
+      '<div class="note">出场集数：' + esc((c.episodes || []).join('、')) + '</div>' +
+      assetStatusHtml(c, jobMap) +
+      '<div style="margin-top:6px"><button class="small" onclick="genAsset(\'character\',' + i + ')">生成定妆图</button> ' +
+      (doneFile && c.character_id ? '<button class="small" onclick="bindCharImage(\'' + c.character_id + '\',\'' + esc(doneFile).replace(/'/g, "\\'") + '\')">设为定妆图</button> ' : '') +
+      '<button class="small" onclick="delScriptItem(\'characters\',' + i + ')">删除角色</button></div></div>';
+  });
+  h += '<label>全部场景（' + s.scenes.length + '）</label>';
+  s.scenes.forEach((x, i) => {
+    h += '<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px">' +
+      '<input data-sc-name="' + i + '" value="' + esc(x.name) + '" placeholder="场景名">' +
+      '<textarea data-sc-desc="' + i + '" rows="2" placeholder="场景固定描述" style="margin-top:6px">' + esc(x.description) + '</textarea>' +
+      '<div class="note">出现集数：' + esc((x.episodes || []).join('、')) + '</div>' +
+      assetStatusHtml(x, jobMap) +
+      '<div style="margin-top:6px"><button class="small" onclick="genAsset(\'scene\',' + i + ')">生成场景图</button> ' +
+      '<button class="small" onclick="delScriptItem(\'scenes\',' + i + ')">删除场景</button></div></div>';
+  });
+  h += '<label>分集（' + s.episodes.length + ' 集）— 点开可改标题/梗概/角色/场景/台词</label>';
+  s.episodes.forEach((e, i) => {
+    const diags = (e.dialogues || []).map(d => (d.character ? d.character + '：' : '') + d.line).join('\n');
+    h += '<details style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px"><summary>第' + e.episode + '集 ' + esc(e.title) + '</summary>' +
+      '<label>标题</label><input data-ep-title="' + i + '" value="' + esc(e.title) + '">' +
+      '<label>梗概</label><textarea data-ep-syn="' + i + '" rows="2">' + esc(e.synopsis) + '</textarea>' +
+      '<label>本集角色（逗号分隔）</label><input data-ep-chars="' + i + '" value="' + esc((e.characters || []).map(c => c.name).join('，')) + '">' +
+      '<label>本集场景（逗号分隔）</label><input data-ep-scenes="' + i + '" value="' + esc((e.scenes || []).map(x => x.name).join('，')) + '">' +
+      '<label>台词（每行：角色：台词）</label><textarea data-ep-diag="' + i + '" rows="5">' + esc(diags) + '</textarea>' +
+      (e.note ? '<div class="note">' + esc(e.note) + '</div>' : '') +
+      '<div style="margin-top:8px"><button class="small" onclick="splitStoryboard(' + i + ')">' + (e.shots && e.shots.length ? '重新拆分镜' : 'AI 拆分镜') + '</button> <span class="note" id="sb-status-' + i + '"></span></div>' +
+      shotsHtml(e, i, jobMap) + '</details>';
+  });
+  h += '<div style="margin-top:10px"><button class="go" style="margin-top:0" onclick="saveScriptEdits()">保存修改</button> <button class="small" onclick="renderScript()">刷新资产状态</button></div>';
+  $('script-result').innerHTML = h;
+  renderedScriptId = curScript.id;
+  document.querySelectorAll('#script-result details').forEach((d, i) => { if (openEps.has(i)) d.open = true; });
+}
+function shotsHtml(e, i, jobMap){
+  if (!e.shots || !e.shots.length) return '';
+  let h = '<label>分镜（' + e.shots.length + ' 镜）— 画面/台词/提示词可改，改完先保存再入队</label>';
+  e.shots.forEach((sh, j) => {
+    const job = sh.job_id ? jobMap[sh.job_id] : null;
+    h += '<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px">' +
+      '<div class="note">镜' + sh.shot + ' · ' + esc(sh.camera) + (job ? ' · ' + esc(job.status) + ' ' + (job.progress || 0) + '%' : '') + '</div>' +
+      '<label>画面</label><textarea data-shot-visual="' + i + '-' + j + '" rows="2">' + esc(sh.visual) + '</textarea>' +
+      '<label>台词</label><input data-shot-diag="' + i + '-' + j + '" value="' + esc(sh.dialogue) + '">' +
+      '<label>H3 提示词</label><textarea data-shot-prompt="' + i + '-' + j + '" rows="4">' + esc(sh.prompt) + '</textarea>' +
+      '<div class="note">出场：' + esc((sh.characters || []).join('、')) + (sh.scene ? ' · 场景：' + esc(sh.scene) : '') + '</div>' +
+      (job && job.status === 'done' && job.files && job.files.length ? '<video controls src="' + esc(job.files[0].url) + '" style="width:100%;border-radius:8px;margin-top:6px"></video>' : '') +
+      '</div>';
+  });
+  h += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">' +
+    '<select id="sb-ratio-' + i + '" style="width:110px"><option>16:9</option><option>9:16</option><option>1:1</option></select>' +
+    '<select id="sb-mode-' + i + '" style="width:140px" title="生成范围">' +
+      '<option value="all">全部重新生成</option>' +
+      '<option value="missing">只生成缺失的</option>' +
+      '<option value="failed">只重试失败的</option>' +
+    '</select>' +
+    '<label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" id="sb-chain-' + i + '" checked> 镜头续接</label>' +
+    '<button class="go" style="margin-top:0" onclick="queueStoryboard(' + i + ')">整集一键生成视频</button>' +
+    '</div>' +
+    '<p class="note" style="margin-top:4px">镜头续接：后一镜自动用前一镜视频的最后一帧作首帧，保证动作连贯。只重试失败的可节省算力。</p>';
+  return h;
+}
+let sbTimers = {};
+async function splitStoryboard(i){
+  await saveScriptEdits(true);
+  const ep = curScript.episodes[i];
+  const st = $('sb-status-' + i); if (st) st.textContent = '拆分镜中…';
+  // 禁用对应按钮
+  const btn = document.querySelector('button[onclick*="splitStoryboard(' + i + ')"]');
+  if (btn) btn.disabled = true;
+  const r = await fetch('/api/script/storyboard', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({script_id: curScript.id, episode: ep.episode})});
+  const d = await r.json();
+  if (!d.ok) { if (st) st.textContent = '失败：' + (d.error || ''); if (btn) btn.disabled = false; return; }
+  if (sbTimers[i]) clearInterval(sbTimers[i]);
+  let _polls = 0;
+  const timer = setInterval(async () => {
+    try {
+      if (++_polls > 200) { clearInterval(timer); if (st) st.textContent = '拆分镜超时（已等 10 分钟），请刷新后再看'; if (btn) btn.disabled = false; return; }
+      const rr = await fetch('/api/script/split/' + d.task_id); const t = await rr.json();
+      if (!t.ok) { clearInterval(timer); if (btn) btn.disabled = false; return; }
+      if (t.status === 'running') return;
+      clearInterval(timer);
+      if (t.status === 'done') { const r2 = await fetch('/api/script/' + curScript.id); const d2 = await r2.json(); if (d2.ok) { curScript = d2.script; renderScript(); } }
+      else if (st) st.textContent = '拆分镜失败：' + (t.error || '');
+      if (btn) btn.disabled = false;
+    } catch(e) {}
+  }, 3000);
+  sbTimers[i] = timer;
+}
+async function queueStoryboard(i){
+  await saveScriptEdits(true);
+  const ep = curScript.episodes[i];
+  const ratio = ($('sb-ratio-' + i) || {}).value || '16:9';
+  const mode = ($('sb-mode-' + i) || {}).value || 'all';
+  const chain = !!($('sb-chain-' + i) || {}).checked;
+  const r = await fetch('/api/script/storyboard/queue', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      script_id: curScript.id,
+      episode: ep.episode,
+      ratio: ratio,
+      mode: mode,
+      chain: chain
+    })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    let msg = '已入队 ' + d.created.length + ' 条视频任务';
+    if (d.skipped && d.skipped.length) msg += '（跳过 ' + d.skipped.length + ' 条）';
+    if (d.chain) msg += '，已启用镜头续接';
+    if (d.warnings && d.warnings.length) msg += '\n注意：这些角色没找到定妆图（名字对不上或没绑定）：' + d.warnings.join('、');
+    alert(msg);
+    const r2 = await fetch('/api/script/' + curScript.id);
+    const d2 = await r2.json();
+    if (d2.ok) { curScript = d2.script; renderScript(); }
+    loadJobs();
+  } else alert(d.error || '入队失败');
+}
+function collectScriptEdits(){
+  if (!curScript) return;
+  const s = curScript;
+  const t = $('sc-title'); if (t) s.title = t.value.trim() || s.title;
+  s.characters.forEach((c, i) => {
+    const n = document.querySelector('[data-ch-name="' + i + '"]'); if (n) c.name = n.value.trim();
+    const l = document.querySelector('[data-ch-look="' + i + '"]'); if (l) c.look_desc = l.value.trim();
+    const v = document.querySelector('[data-ch-voice="' + i + '"]'); if (v) c.voice_desc = v.value.trim();
+  });
+  s.scenes.forEach((x, i) => {
+    const n = document.querySelector('[data-sc-name="' + i + '"]'); if (n) x.name = n.value.trim();
+    const d = document.querySelector('[data-sc-desc="' + i + '"]'); if (d) x.description = d.value.trim();
+  });
+  const byName = {}; s.characters.forEach(c => byName[c.name] = c);
+  const scByName = {}; s.scenes.forEach(x => scByName[x.name] = x);
+  s.episodes.forEach((e, i) => {
+    const ti = document.querySelector('[data-ep-title="' + i + '"]'); if (ti) e.title = ti.value.trim();
+    const sy = document.querySelector('[data-ep-syn="' + i + '"]'); if (sy) e.synopsis = sy.value.trim();
+    const ch = document.querySelector('[data-ep-chars="' + i + '"]');
+    if (ch) e.characters = ch.value.split(/[，,、]/).map(x => x.trim()).filter(Boolean).map(n => byName[n] ? {name: n, look_desc: byName[n].look_desc, voice_desc: byName[n].voice_desc} : {name: n, look_desc: '', voice_desc: ''});
+    const sc = document.querySelector('[data-ep-scenes="' + i + '"]');
+    if (sc) e.scenes = sc.value.split(/[，,、]/).map(x => x.trim()).filter(Boolean).map(n => scByName[n] ? {name: n, description: scByName[n].description} : {name: n, description: ''});
+    const dg = document.querySelector('[data-ep-diag="' + i + '"]');
+    if (dg) e.dialogues = dg.value.split('\n').map(ln => ln.trim()).filter(Boolean).map(ln => { const m = ln.split(/[：:]/); return m.length > 1 ? {character: m[0].trim(), line: m.slice(1).join('：').trim()} : {character: '', line: ln}; });
+    (e.shots || []).forEach((sh, j) => {
+      const v = document.querySelector('[data-shot-visual="' + i + '-' + j + '"]'); if (v) sh.visual = v.value.trim();
+      const sd = document.querySelector('[data-shot-diag="' + i + '-' + j + '"]'); if (sd) sh.dialogue = sd.value.trim();
+      const pr = document.querySelector('[data-shot-prompt="' + i + '-' + j + '"]'); if (pr) sh.prompt = pr.value.trim();
+    });
+  });
+}
+async function saveScriptEdits(silent){
+  if (!curScript) return;
+  collectScriptEdits();
+  const r = await fetch('/api/script/' + curScript.id, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title: curScript.title, episodes: curScript.episodes, characters: curScript.characters, scenes: curScript.scenes})});
+  const d = await r.json();
+  if (d.ok) { if (!silent) { alert('已保存'); renderScript(); } loadScriptList(); } else alert(d.error || '保存失败');
+}
+function delScriptItem(kind, i){ collectScriptEdits(); curScript[kind].splice(i, 1); renderScript(); }
+async function genAsset(type, i){
+  await saveScriptEdits(true);
+  const item = type === 'character' ? curScript.characters[i] : curScript.scenes[i];
+  if (!item || !item.name) { alert('先填名字'); return; }
+  const r = await fetch('/api/script/asset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({script_id: curScript.id, type: type, name: item.name})});
+  const d = await r.json();
+  if (d.ok) { item.asset_job = d.job_id; if (d.character_id) item.character_id = d.character_id; alert('已入队生成' + (type === 'character' ? '定妆图（角色库条目已同步）' : '场景图')); renderScript(); loadJobs(); }
+  else alert(d.error || '生成失败');
+}
+async function bindCharImage(cid, filename){
+  const r = await fetch('/api/characters/' + cid + '/image', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image: filename})});
+  const d = await r.json();
+  alert(d.ok ? '已设为定妆图，生图/视频选这个角色时会自动带入' : (d.error || '绑定失败'));
+}
+// 主题：自动（7:00-19:00 白天，其余夜晚）/ 白天 / 夜晚，左下角按钮循环切换，选择存 localStorage
+function applyTheme(){
+  let mode = 'auto';
+  try { mode = localStorage.getItem('h3theme') || 'auto'; } catch(e) {}
+  let dark;
+  if (mode === 'dark') dark = true;
+  else if (mode === 'light') dark = false;
+  else { const h = new Date().getHours(); dark = h >= 19 || h < 7; }
+  document.body.classList.toggle('dark', dark);
+  const lb = $('theme-label');
+  if (lb) lb.textContent = mode === 'auto' ? ('自动 · ' + (dark ? '夜晚' : '白天')) : (mode === 'dark' ? '夜晚' : '白天');
+}
+function cycleTheme(){
+  let cur = 'auto';
+  try { cur = localStorage.getItem('h3theme') || 'auto'; } catch(e) {}
+  const next = cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto';
+  try { localStorage.setItem('h3theme', next); } catch(e) {}
+  applyTheme();
+}
+// 平台自更新：上传源码包 → 后端备份+覆盖+重启 → 轮询版本号变化后刷新页面
+async function doUpdate(){
+  const f = $('upd-file').files[0];
+  const token = $('upd-token').value.trim();
+  const st = $('upd-status');
+  if (!f) { st.textContent = '先选更新包文件'; return; }
+  if (!token) { st.textContent = '先填更新口令（实例 data/update_token.txt 里，首次启动自动生成）'; return; }
+  try { localStorage.setItem('h3updtoken', token); } catch(e) {}
+  if (!confirm('确定更新平台？会自动备份旧版并重启，正在生成的任务会中断后重排。')) return;
+  const oldVer = window.__ver || '';
+  st.textContent = '上传中…';
+  const fd = new FormData(); fd.append('package', f); fd.append('token', token);
+  let d;
+  try { const r = await fetch('/api/update', {method:'POST', body: fd}); d = await r.json(); }
+  catch(e) { st.textContent = '上传失败：' + e.message; return; }
+  if (!d.ok) { st.textContent = d.error || '更新失败'; return; }
+  st.textContent = '已装好 ' + d.to + '，重启中…';
+  const t0 = Date.now();
+  const timer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/health'); const h = await r.json();
+      if (h.version && h.version !== oldVer) { clearInterval(timer); location.reload(); return; }
+    } catch(e) {}
+    if (Date.now() - t0 > 90000) { clearInterval(timer); st.textContent = '90 秒还没切到新版，可能已回滚旧版，看 data/update.log'; }
+  }, 2000);
+}
+function waitNewVersion(oldVer, st){
+  const t0 = Date.now();
+  const timer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/health'); const h = await r.json();
+      if (h.version && h.version !== oldVer) { clearInterval(timer); location.reload(); return; }
+    } catch(e) {}
+    if (Date.now() - t0 > 90000) { clearInterval(timer); st.textContent = '90 秒还没切到新版，可能已回滚旧版，看 data/update.log'; }
+  }, 2000);
+}
+async function checkUpdate(){
+  const st = $('upd-status'); const btn = $('upd-remote-btn');
+  st.textContent = '检查中…';
+  try {
+    const r = await fetch('/api/update/check'); const d = await r.json();
+    if (!d.ok) { st.textContent = d.error || '检查失败'; btn.hidden = true; return; }
+    if (d.has_update) {
+      st.textContent = '有新版 v' + d.latest + '（当前 v' + d.current + '）' + (d.notes ? '：' + d.notes : '');
+      btn.hidden = false;
+    } else {
+      st.textContent = '已经是最新版 v' + d.current;
+      btn.hidden = true;
+    }
+  } catch(e) { st.textContent = '检查失败：' + e.message; }
+}
+async function applyRemoteUpdate(){
+  const token = $('upd-token').value.trim();
+  const st = $('upd-status');
+  if (!token) { st.textContent = '先填更新口令（实例 data/update_token.txt 里，首次启动自动生成）'; return; }
+  try { localStorage.setItem('h3updtoken', token); } catch(e) {}
+  if (!confirm('确定更新到新版？会自动备份旧版并重启，正在生成的任务会中断后重排。')) return;
+  const oldVer = window.__ver || '';
+  st.textContent = '下载并安装新版中…';
+  const fd = new FormData(); fd.append('token', token);
+  let d;
+  try { const r = await fetch('/api/update/remote', {method:'POST', body: fd}); d = await r.json(); }
+  catch(e) { st.textContent = '更新失败：' + e.message; return; }
+  if (!d.ok) { st.textContent = d.error || '更新失败'; return; }
+  st.textContent = d.message || ('已装好 ' + d.to + '，重启中…');
+  waitNewVersion(oldVer, st);
+}
+function __safe(f){try{f()}catch(e){console.error(e);document.title="INIT-ERR:"+e.message}} __safe(()=>{ try{ const t = localStorage.getItem('h3updtoken'); if (t) $('upd-token').value = t; }catch(e){} }); __safe(applyTheme); setInterval(applyTheme, 60000); __safe(loadLlmCfg); __safe(loadScriptList); __safe(restoreParams); __safe(videoModeChange); __safe(audioModeChange); __safe(imgModeChange); __safe(loadHealth); __safe(loadGpu); __safe(loadJobs); setInterval(loadJobs, 2000); setInterval(loadHealth, 10000); setInterval(loadGpu, 5000);
+</script>
+</body>
+</html>
