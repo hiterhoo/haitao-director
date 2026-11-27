@@ -33,17 +33,17 @@ python3 app.py        # 默认 8080 端口，浏览器打开 http://<机器IP>:8
 
 ## 平台自更新
 
-页面最下方有「平台更新」卡：选新版源码包（.tar.gz，里面是 `visual-platform/` 目录）+ 填更新口令，点「上传并更新」即可，不用重新部署。更新会自动备份旧代码（在平台目录旁边的 `visual-platform-bak-*`，只留最近 3 个）、覆盖新代码、重启平台；新版起不来会自动回滚旧版。`data/`（任务、剧本、Key、角色库）更新时不覆盖。更新口令在 `data/update_token.txt`（首次启动自动生成，也可用环境变量 `UPDATE_TOKEN` 指定）；更新日志在 `data/update.log`。版本号在 `config.py` 的 `VERSION`（纯数字，每次发新版 +1），页面左下角和右上角会显示。
+页面最下方有「平台更新」卡：选新版源码包（.tar.gz，里面是 `visual-platform/` 目录）+ 填更新口令，点「上传并更新」即可，不用重新部署。更新会自动备份旧代码（在平台目录旁边的 `visual-platform-bak-*`，只留最近 3 个）、覆盖新代码、重启平台；新版起不来会自动回滚旧版。`data/`（任务、剧本、Key、角色库）更新时不覆盖。更新口令在 `data/update_token.txt`（首次启动自动生成，也可用环境变量 `UPDATE_TOKEN` 指定）；更新日志在 `data/update.log`。版本号在 `config.py` 的 `VERSION`（从 1.0.0 开始，每次发新版末位 +1），页面左下角和右上角会显示。
 
 ### 远程自动更新（发一次，所有人自动跟上）
 
 在 `config.py` 里填 `UPDATE_MANIFEST_URL`（或环境变量同名），指向一个 JSON 清单地址，实例会每 6 小时（`UPDATE_CHECK_INTERVAL_H` 可改）自动检查：发现版本号比本地大、且队列空闲时，自动下载、校验、更新（`AUTO_UPDATE=false` 可关掉自动装，改为页面点「检查远程更新」→「一键更新到新版」手动确认）。清单格式：
 
 ```json
-{"version": 2, "package_url": "https://…/visual-platform-v2.tar.gz", "sha256": "更新包的sha256（建议填，会校验）", "notes": "这次改了什么（可选，页面会显示）"}
+{"version": "1.0.1", "package_url": "https://…/visual-platform-v1.0.1.tar.gz", "sha256": "更新包的sha256（建议填，会校验）", "notes": "这次改了什么（可选，页面会显示）"}
 ```
 
-发布新版时：把 `config.py` 的 `VERSION` +1、打好 tar.gz 上传到清单指向的位置、把清单的 version 和 sha256 改掉即可，所有配了这个地址的实例会自动跟上，不用逐个通知。
+发布新版时：把 `config.py` 的 `VERSION` 末位 +1、打好 tar.gz 上传到清单指向的位置、把清单的 version 和 sha256 改掉即可，所有配了这个地址的实例会自动跟上，不用逐个通知。
 
 ## 注意
 

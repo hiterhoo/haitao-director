@@ -85,9 +85,11 @@ def _remove_entry(path):
         os.remove(path)
 
 
-def _ver_int(v):
+def _ver_key(v):
+    """版本号转成可比较的元组：'1.0.2' -> (1, 0, 2)；纯数字 '2' -> (2,)；解析不了返回 None。"""
     try:
-        return int(str(v).strip())
+        parts = str(v).strip().lstrip("vV").split(".")
+        return tuple(int(p) for p in parts if p != "")
     except (TypeError, ValueError):
         return None
 
@@ -108,8 +110,8 @@ def check_remote(config):
     except Exception as e:
         return {"ok": False, "error": "拉取更新清单失败：%s" % e, "current": current}
     latest = str(m.get("version", "")).strip()
-    ci, li = _ver_int(current), _ver_int(latest)
-    has = bool(li is not None and ci is not None and li > ci)
+    ck, lk = _ver_key(current), _ver_key(latest)
+    has = bool(lk is not None and ck is not None and lk > ck)
     return {
         "ok": True,
         "current": current,

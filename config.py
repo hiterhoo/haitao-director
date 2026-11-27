@@ -5,9 +5,9 @@ import os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
-# 平台版本号：纯数字，每次加新功能或修 bug 就 +1。
+# 平台版本号：从 1.0.0 开始，每次加新功能或修 bug 就把末位 +1（1.0.1、1.0.2…）。
 # 页面左下角和 /api/health 会显示，自更新靠它比大小判断有没有新版。
-VERSION = "1"
+VERSION = "1.0.0"
 
 # 远程更新清单地址（拉取式自动更新）：填了之后，实例会定期去这个地址
 # 拉一个 JSON 清单 {"version": 数字, "package_url": "更新包直链", "sha256": "包的sha256(可选)", "notes": "更新说明(可选)"}，
