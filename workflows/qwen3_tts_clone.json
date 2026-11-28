@@ -1,1 +1,34 @@
-{"1":{"class_type":"LoadAudio","inputs":{"audio":""}},"2":{"class_type":"FB_Qwen3TTSVoiceClone","inputs":{"device":"auto","language":"Auto","model_choice":"1.7B","precision":"bf16","ref_audio":["1",0],"ref_text":"","seed":0,"target_text":"{{TEXT}}"}},"3":{"class_type":"SaveAudio","inputs":{"audio":["2",0],"filename_prefix":"audio/visual_tts_clone"}}}
+{
+  "1": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": ""
+    }
+  },
+  "2": {
+    "class_type": "FB_Qwen3TTSVoiceClone",
+    "inputs": {
+      "target_text": "{{TEXT}}",
+      "ref_audio": [
+        "1",
+        0
+      ],
+      "ref_text": "",
+      "model_choice": "1.7B",
+      "device": "auto",
+      "precision": "bf16",
+      "language": "Auto",
+      "seed": 0
+    }
+  },
+  "3": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "2",
+        0
+      ],
+      "filename_prefix": "audio/visual_tts_clone"
+    }
+  }
+}
