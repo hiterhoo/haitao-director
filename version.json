@@ -1,1 +1,1 @@
-{"version": "1.0.3", "package_url": "https://github.com/hiterhoo/haitao-director/releases/download/v1.0.3/visual-platform-v1.0.3.tar.gz", "sha256": "a78165dbb83dd259119b9a934dd38d31fd8b179af5696fa84dbf5d1f82162a31", "notes": "工作台改名：海影-AI漫剧工作台"}
+{"version": "1.0.4", "package_url": "https://github.com/hiterhoo/haitao-director/releases/download/v1.0.4/visual-platform-v1.0.4.tar.gz", "sha256": "832c458bfac901b1bb1e3f5d1f1e16e12fda6a3b7725ae2023738e63538695ab", "notes": "H3原生音频恢复；新增FL2VA首帧/首尾帧（图生视频/首尾帧视频）；超分音频透传；15秒时长档"}
