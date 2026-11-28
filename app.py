@@ -306,14 +306,42 @@ def apply_params(workflow, params):
         if params.get("count") is not None:
             el_in["batch_size"] = max(1, min(8, _safe_int(params["count"], 1)))
 
-    # --- H3 参考生视频 ---
+    # --- H3 首帧/首尾帧生视频（FL2VA，2026-11-28 新增） ---
+    # MiniMaxH3ImageToVideo：first_frame 是真首帧锁定（不是参考图），
+    # last_frame 可选；两个都不接就是文生视频。节点输入名按官方模板/节点文档核对。
+    fl_id, fl = _find(nodes, "MiniMaxH3ImageToVideo")
     h3_id, h3 = _find(nodes, "MiniMaxH3ReferenceToVideo")
-    if h3 is not None:
-        inputs = h3.setdefault("inputs", {})
-        # 时长：5 秒 124 帧，10 秒 241 帧（从 "5秒"/"10秒" 里提数字）
+    if fl is not None:
+        fin = fl.setdefault("inputs", {})
         _dm = re.search(r"\d+", str(params.get("duration", "")))
         _secs = int(_dm.group(0)) if _dm else 5
-        inputs["length"] = 241 if _secs >= 10 else 124
+        fin["length"] = 362 if _secs >= 15 else (241 if _secs >= 10 else 124)
+        if size:
+            fin["width"], fin["height"] = size
+        first = params.get("first_image") or (images[0] if images else None)
+        if first:
+            li_id, li = _find(nodes, "LoadImage")
+            if li is None:
+                li_id = _new_node("LoadImage", {"image": first})
+            else:
+                li.setdefault("inputs", {})["image"] = first
+            fin["first_frame"] = [li_id, 0]
+        else:
+            # 没给首帧：纯文生视频，摘掉工作流里默认的首帧接线
+            fin.pop("first_frame", None)
+        last = params.get("last_image")
+        if last:
+            nid = _new_node("LoadImage", {"image": last})
+            fin["last_frame"] = [nid, 0]
+
+    # --- H3 参考生视频 ---
+    elif h3 is not None:
+        inputs = h3.setdefault("inputs", {})
+        # 时长：5 秒 124 帧，10 秒 241 帧，15 秒 362 帧（H3 的 17k+5 帧网格上限，
+        # 节点会自己向上对齐；从 "5秒"/"10秒"/"15秒" 里提数字）
+        _dm = re.search(r"\d+", str(params.get("duration", "")))
+        _secs = int(_dm.group(0)) if _dm else 5
+        inputs["length"] = 362 if _secs >= 15 else (241 if _secs >= 10 else 124)
         if size:
             inputs["width"], inputs["height"] = size
         if images:
@@ -1035,7 +1063,9 @@ def video():
         "videos": (p.get("videos") or [])[:config.REF_LIMITS["videos"]],
         "audios": (p.get("audios") or [])[:config.REF_LIMITS["audios"]],
     }
-    return jsonify({"job_id": new_job("video", config.VIDEO_WORKFLOW, params)})
+    # 图生视频 / 首尾帧视频走 FL2VA 工作流（首帧真锁定），其余走 Ref2VA 参考生视频。
+    wf = config.VIDEO_FL2VA_WORKFLOW if mode in ("图生视频", "首尾帧视频") else config.VIDEO_WORKFLOW
+    return jsonify({"job_id": new_job("video", wf, params)})
 
 
 @app.route("/api/audio", methods=["POST"])
