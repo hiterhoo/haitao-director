@@ -7,7 +7,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 
 # 平台版本号：从 1.0.0 开始，每次加新功能或修 bug 就把末位 +1（1.0.1、1.0.2…）。
 # 页面左下角和 /api/health 会显示，自更新靠它比大小判断有没有新版。
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 # 远程更新清单地址（拉取式自动更新）：填了之后，实例会定期去这个地址
 # 拉一个 JSON 清单 {"version": 数字, "package_url": "更新包直链", "sha256": "包的sha256(可选)", "notes": "更新说明(可选)"}，
@@ -67,6 +67,7 @@ OUTPUT_DIR = os.environ.get("OUTPUT_DIR", COMFYUI_OUTPUT_DIR)
 WORKFLOW_DIR = os.environ.get("WORKFLOW_DIR", os.path.join(BASE, "workflows"))
 IMAGE_WORKFLOW = "qwen_image.json"
 VIDEO_WORKFLOW = "minimax_h3.json"
+VIDEO_FL2VA_WORKFLOW = "minimax_h3_fl2va.json"  # 图生视频 / 首尾帧视频：首帧真锁定（2026-11-28 新增）
 UPSCALE_WORKFLOW = "minimax_h3_upscale.json"
 AUDIO_WORKFLOW = "qwen3_tts.json"
 AUDIO_CLONE_WORKFLOW = "qwen3_tts_clone.json"
