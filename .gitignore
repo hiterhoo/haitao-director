@@ -1,3 +1,4 @@
+# 本机数据与运行时产物，永不进仓库（data/ 里有 API Key、更新口令、角色库）
 data/
 input/
 output/
